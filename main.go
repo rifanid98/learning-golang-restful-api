@@ -68,6 +68,7 @@ func main() {
 	h := &products.ProductsHandler{Coll: coll}
 	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
 	e.GET("/products", h.GetProducts)
+	e.PUT("/products/:id", h.UpdateProduct, middleware.BodyLimit("1M"))
 
 	e.Logger.Infof("Listening on %s:%s ", cfg.AppHost, cfg.AppPort)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.AppHost, cfg.AppPort)))

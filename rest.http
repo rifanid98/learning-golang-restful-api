@@ -16,3 +16,17 @@ GET http://localhost:8080/products
 ###
 GET http://localhost:8080/products?_id=60f958d492aaac0c1a610810
 ###
+PUT http://localhost:8080/products/60f958d492aaac0c1a610810
+Content-Type: application/json
+X-Correlation-Id: yBauqKUWBKLt
+
+{
+  "name": "alexas",
+  "price": 250,
+  "currency": "INP",
+  "discount": 50,
+  "vendor": "Amazon",
+  "accessories": ["charger", "subscription", "gift coupon"],
+  "is_essential": false
+}
+###

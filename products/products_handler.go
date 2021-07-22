@@ -2,6 +2,8 @@ package products
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -95,4 +97,55 @@ func (h *ProductsHandler) GetProducts(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, &products)
+}
+
+func updateProduct(ctx context.Context, id string, body io.ReadCloser, coll CollectionAPI) (*Product, error) {
+	var product Product
+
+	// 1. find product or return 404
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Errorf("Unable to convert id to _id: %v", err)
+		return &product, err
+	}
+
+	filter := bson.M{"_id": _id}
+	res := coll.FindOne(ctx, filter)
+	if err := res.Decode(&product); err != nil {
+		log.Errorf("Unable to decode FindOne res: %v", err)
+		return &product, err
+	}
+
+	// 2. decode body to struct or return 500
+	if err := json.NewDecoder(body).Decode(&product); err != nil {
+		log.Errorf("Unable to decode from req body to struct: %v", err)
+		return &product, err
+	}
+
+	// 3. validate decoded body or return 400
+	if err := v.Struct(&product); err != nil {
+		log.Errorf("Unable to decode from struct: %v", err)
+		return &product, err
+	}
+
+	// 4. update data or return 500
+	doc, err := coll.UpdateOne(ctx, filter, bson.M{"$set": product})
+	if err != nil {
+		log.Errorf("Unable to update: %v", err)
+		return &product, err
+	}
+
+	log.Print(doc.MatchedCount)
+	return &product, nil
+}
+
+func (h *ProductsHandler) UpdateProduct(c echo.Context) error {
+	c.Echo().Validator = &ProductValidator{validator: v}
+
+	product, err := updateProduct(context.Background(), c.Param("id"), c.Request().Body, h.Coll)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, product)
 }
