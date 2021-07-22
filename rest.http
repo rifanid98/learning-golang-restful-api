@@ -1,11 +1,12 @@
 POST http://localhost:8080/products
 Content-Type: application/json
+X-Correlation-Id: yBauqKUWBKLt
 
 [
   {
     "name": "alexa",
     "price": 250,
-    "currency": "INR",
+    "currency": "INP",
     "vendor": "Amazon",
     "accessories": ["charger", "subscription", "gift coupon"]
   }
