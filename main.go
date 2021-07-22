@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"learning-golang-restful-api/config"
+	"learning-golang-restful-api/products"
 	"log"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -37,6 +38,8 @@ func init() {
 
 func main() {
 	e := echo.New()
+	h := &products.ProductsHandler{Coll: coll}
+	e.POST("/products", h.CreateProducts)
 	e.Logger.Infof("Listening on %s:%s ", cfg.AppHost, cfg.AppPort)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.AppHost, cfg.AppPort)))
 }
