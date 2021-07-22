@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	c    *mongo.Client
+	C    *mongo.Client
 	db   *mongo.Database
 	coll *mongo.Collection
 	cfg  config.Properties
@@ -32,12 +32,12 @@ func init() {
 
 	mongoURL := fmt.Sprintf("mongodb://%s:%s", cfg.DBHost, cfg.DBPort)
 
-	c, err := mongo.Connect(context.Background(), options.Client().ApplyURI(mongoURL))
+	C, err := mongo.Connect(context.Background(), options.Client().ApplyURI(mongoURL))
 	if err != nil {
 		log.Fatalf("Unable to connect to database : %v", err)
 	}
 
-	db = c.Database(cfg.DBName)
+	db = C.Database(cfg.DBName)
 	coll = db.Collection(cfg.DBCollection)
 	h = &ProductsHandler{}
 }

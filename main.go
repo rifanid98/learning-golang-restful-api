@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"learning-golang-restful-api/config"
 	"learning-golang-restful-api/products"
-	"log"
 
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/labstack/gommon/log"
 	"github.com/labstack/gommon/random"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -60,12 +60,14 @@ func addCorrelationId(next echo.HandlerFunc) echo.HandlerFunc {
 
 func main() {
 	e := echo.New()
+	e.Logger.SetLevel(log.ERROR)
 
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Pre(addCorrelationId)
 
 	h := &products.ProductsHandler{Coll: coll}
 	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
+	e.GET("/products", h.GetProducts)
 
 	e.Logger.Infof("Listening on %s:%s ", cfg.AppHost, cfg.AppPort)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.AppHost, cfg.AppPort)))

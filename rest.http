@@ -12,3 +12,4 @@ X-Correlation-Id: yBauqKUWBKLt
   }
 ]
 ###
+GET http://localhost:8080/products

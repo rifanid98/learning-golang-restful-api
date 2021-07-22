@@ -2,10 +2,11 @@ package products
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/labstack/echo"
+	"github.com/labstack/gommon/log"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -21,7 +22,7 @@ func createProducts(ctx context.Context, products []Product, coll CollectionAPI)
 
 		res, err := coll.InsertOne(ctx, product)
 		if err != nil {
-			log.Fatalf("Unable to insert: %v", err)
+			log.Errorf("Unable to insert: %v", err)
 			return nil, err
 		}
 
@@ -36,13 +37,13 @@ func (h *ProductsHandler) CreateProducts(c echo.Context) error {
 
 	var products []Product
 	if err := c.Bind(&products); err != nil {
-		log.Fatalf("Unable to bind: %v", err)
+		log.Errorf("Unable to bind: %v", err)
 		return err
 	}
 
 	for _, product := range products {
 		if err := c.Validate(product); err != nil {
-			log.Printf("Unable to validate the product %+v %v", product, err)
+			log.Errorf("Unable to validate the product %+v %v", product, err)
 			return err
 		}
 	}
@@ -53,4 +54,28 @@ func (h *ProductsHandler) CreateProducts(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, ids)
+}
+
+func findProducts(ctx context.Context, collection CollectionAPI) ([]Product, error) {
+	var products []Product
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		log.Errorf("Unable to find products : %v", err)
+	}
+
+	err = cursor.All(ctx, &products)
+	if err != nil {
+		log.Errorf("Unable to read the cursor : %v", err)
+	}
+
+	return products, nil
+}
+
+func (h *ProductsHandler) GetProducts(c echo.Context) error {
+	products, err := findProducts(context.Background(), h.Coll)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &products)
 }
