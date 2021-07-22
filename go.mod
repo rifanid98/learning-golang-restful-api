@@ -10,6 +10,7 @@ require (
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.3.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
+	github.com/stretchr/testify v1.6.1
 	go.mongodb.org/mongo-driver v1.7.0
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )
