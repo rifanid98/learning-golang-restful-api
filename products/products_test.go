@@ -63,4 +63,15 @@ func TestProduct(t *testing.T) {
 		h.Coll = coll
 		assert.Nil(t, h.CreateProducts(ctx))
 	})
+
+	t.Run("Test get products", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/products", nil)
+		res := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		e := echo.New()
+		ctx := e.NewContext(req, res)
+		h.Coll = coll
+		assert.Nil(t, h.GetProducts(ctx))
+		assert.Equal(t, http.StatusOK, res.Code)
+	})
 }

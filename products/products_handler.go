@@ -2,7 +2,9 @@ package products
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/gommon/log"
@@ -56,9 +58,13 @@ func (h *ProductsHandler) CreateProducts(c echo.Context) error {
 	return c.JSON(http.StatusCreated, ids)
 }
 
-func findProducts(ctx context.Context, collection CollectionAPI) ([]Product, error) {
+func findProducts(ctx context.Context, qs url.Values, collection CollectionAPI) ([]Product, error) {
 	var products []Product
-	cursor, err := collection.Find(ctx, bson.M{})
+	filter := make(map[string]interface{})
+	for k, v := range qs {
+		filter[k] = v[0]
+	}
+	cursor, err := collection.Find(ctx, bson.M(filter))
 	if err != nil {
 		log.Errorf("Unable to find products : %v", err)
 	}
@@ -72,7 +78,8 @@ func findProducts(ctx context.Context, collection CollectionAPI) ([]Product, err
 }
 
 func (h *ProductsHandler) GetProducts(c echo.Context) error {
-	products, err := findProducts(context.Background(), h.Coll)
+	fmt.Println("Hollaa")
+	products, err := findProducts(context.Background(), c.QueryParams(), h.Coll)
 	if err != nil {
 		return err
 	}
