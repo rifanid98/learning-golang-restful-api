@@ -99,6 +99,34 @@ func (h *ProductsHandler) GetProducts(c echo.Context) error {
 	return c.JSON(http.StatusOK, &products)
 }
 
+func findProduct(ctx context.Context, id string, coll CollectionAPI) (*Product, error) {
+	var product Product
+
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Errorf("Unable to convert id to _id: %v", err)
+		return &product, err
+	}
+
+	filter := bson.M{"_id": _id}
+	res := coll.FindOne(ctx, filter)
+	if err := res.Decode(&product); err != nil {
+		log.Errorf("Unable to decode FindOne res: %v", err)
+		return &product, err
+	}
+
+	return &product, nil
+}
+
+func (h *ProductsHandler) GetProduct(c echo.Context) error {
+	products, err := findProduct(context.Background(), c.Param("id"), h.Coll)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, &products)
+}
+
 func updateProduct(ctx context.Context, id string, body io.ReadCloser, coll CollectionAPI) (*Product, error) {
 	var product Product
 
@@ -129,13 +157,12 @@ func updateProduct(ctx context.Context, id string, body io.ReadCloser, coll Coll
 	}
 
 	// 4. update data or return 500
-	doc, err := coll.UpdateOne(ctx, filter, bson.M{"$set": product})
+	_, err = coll.UpdateOne(ctx, filter, bson.M{"$set": product})
 	if err != nil {
 		log.Errorf("Unable to update: %v", err)
 		return &product, err
 	}
 
-	log.Print(doc.MatchedCount)
 	return &product, nil
 }
 
@@ -148,4 +175,27 @@ func (h *ProductsHandler) UpdateProduct(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, product)
+}
+
+func deleteProduct(ctx context.Context, id string, coll CollectionAPI) (int, error) {
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Errorf("Unable to convert id to _id: %v", err)
+	}
+
+	res, err := coll.DeleteOne(ctx, bson.M{"_id": _id})
+	if err != nil {
+		log.Errorf("Unable to delete data: %v", err)
+	}
+
+	return int(res.DeletedCount), nil
+}
+
+func (h *ProductsHandler) DeleteProduct(c echo.Context) error {
+	del, err := deleteProduct(context.Background(), c.Param("id"), h.Coll)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, del)
 }
