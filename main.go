@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"learning-golang-restful-api/config"
 	"learning-golang-restful-api/products"
+	"learning-golang-restful-api/users"
 
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/labstack/gommon/random"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -18,8 +20,9 @@ import (
 var (
 	C             *mongo.Client
 	db            *mongo.Database
-	coll          *mongo.Collection
 	cfg           config.Properties
+	productsColl  *mongo.Collection
+	usersColl     *mongo.Collection
 	CorrelationId = "X-Correlation-Id"
 )
 
@@ -36,7 +39,21 @@ func init() {
 	}
 
 	db = C.Database(cfg.DBName)
-	coll = db.Collection(cfg.DBCollection)
+	productsColl = db.Collection(cfg.DBProductCollection)
+	usersColl = db.Collection(cfg.DBUsersCollection)
+
+	isUserIndexUnique := true
+	indexModel := mongo.IndexModel{
+		Keys: bson.D{{"username", 1}},
+		Options: &options.IndexOptions{
+			Unique: &isUserIndexUnique,
+		},
+	}
+
+	_, err = usersColl.Indexes().CreateOne(context.Background(), indexModel)
+	if err != nil {
+		log.Fatalf("Unable to create an index: %v", err)
+	}
 }
 
 func addCorrelationId(next echo.HandlerFunc) echo.HandlerFunc {
@@ -65,17 +82,19 @@ func main() {
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Pre(addCorrelationId)
 	e.Pre(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: `${time_rfc3339_nano} ${remote_ip} ${host} ${method} ${uri} ${user_agent}` +
+		Format: `${time_rfc3339_nano} ${remote_ip} ${header:X-Correlation-Id} ${host} ${method} ${uri} ${user_agent}` +
 			`${status} ${error} ${latency_human}` + "\n",
 	}))
 
-	h := &products.ProductsHandler{Coll: coll}
+	h := &products.ProductsHandler{Coll: productsColl}
 	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
 	e.GET("/products", h.GetProducts)
 	e.GET("/products/:id", h.GetProduct)
 	e.PUT("/products/:id", h.UpdateProduct, middleware.BodyLimit("1M"))
 	e.DELETE("/products/:id", h.DeleteProduct)
 
+	uh := &users.UsersHandler{Coll: usersColl}
+	e.POST("/users", uh.CreateUser)
 	e.Logger.Infof("Listening on %s:%s ", cfg.AppHost, cfg.AppPort)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.AppHost, cfg.AppPort)))
 }
