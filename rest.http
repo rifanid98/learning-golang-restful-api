@@ -1,0 +1,11 @@
+POST http://localhost:8080/products
+Content-Type: application/json
+
+{
+  "name": "alexa",
+  "price": 250,
+  "currency": "INR",
+  "vendor": "Amazon",
+  "accessories": ["charger", "subscription", "gift coupon"]
+}
+###
