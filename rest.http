@@ -2,6 +2,7 @@
 POST http://localhost:8080/products
 Content-Type: application/json
 X-Correlation-Id: yBauqKUWBKLt
+X-Auth-Token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2MjY5NzUwNzAsInVzZXJfaWQiOiJhZG5pbnNpamF3YS5vZmZpY2VAZ21haWwuY29tIn0.mjm4yOzIG6I6ASXHEIm66prjkbVcfQbjtfrWl7fU5Sw
 
 [
   {
@@ -14,12 +15,16 @@ X-Correlation-Id: yBauqKUWBKLt
 ]
 ###
 GET http://localhost:8080/products
+X-Auth-Token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2MjY5NzUwNzAsInVzZXJfaWQiOiJhZG5pbnNpamF3YS5vZmZpY2VAZ21haWwuY29tIn0.mjm4yOzIG6I6ASXHEIm66prjkbVcfQbjtfrWl7fU5Sw
 ###
 GET http://localhost:8080/products?_id=60f9786367f22c1cee842977
+X-Auth-Token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2MjY5NzUwNzAsInVzZXJfaWQiOiJhZG5pbnNpamF3YS5vZmZpY2VAZ21haWwuY29tIn0.mjm4yOzIG6I6ASXHEIm66prjkbVcfQbjtfrWl7fU5Sw
 ###
 GET http://localhost:8080/products/60f9786367f22c1cee842977
+X-Auth-Token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2MjY5NzUwNzAsInVzZXJfaWQiOiJhZG5pbnNpamF3YS5vZmZpY2VAZ21haWwuY29tIn0.mjm4yOzIG6I6ASXHEIm66prjkbVcfQbjtfrWl7fU5Sw
 ###
 PUT http://localhost:8080/products/60f9786367f22c1cee842977
+X-Auth-Token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2MjY5NzUwNzAsInVzZXJfaWQiOiJhZG5pbnNpamF3YS5vZmZpY2VAZ21haWwuY29tIn0.mjm4yOzIG6I6ASXHEIm66prjkbVcfQbjtfrWl7fU5Sw
 Content-Type: application/json
 X-Correlation-Id: yBauqKUWBKLt
 
@@ -34,6 +39,7 @@ X-Correlation-Id: yBauqKUWBKLt
 }
 ###
 PUT http://localhost:8080/products/60f9786367f22c1cee842977
+X-Auth-Token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2MjY5NzUwNzAsInVzZXJfaWQiOiJhZG5pbnNpamF3YS5vZmZpY2VAZ21haWwuY29tIn0.mjm4yOzIG6I6ASXHEIm66prjkbVcfQbjtfrWl7fU5Sw
 Content-Type: application/json
 X-Correlation-Id: yBauqKUWBKLt
 
@@ -42,6 +48,7 @@ X-Correlation-Id: yBauqKUWBKLt
 }
 ###
 DELETE http://localhost:8080/products/60f9786367f22c1cee842977
+X-Auth-Token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2MjY5NzUwNzAsInVzZXJfaWQiOiJhZG5pbnNpamF3YS5vZmZpY2VAZ21haWwuY29tIn0.mjm4yOzIG6I6ASXHEIm66prjkbVcfQbjtfrWl7fU5Sw
 ###
 POST http://localhost:8080/auth/register
 Content-Type: application/json

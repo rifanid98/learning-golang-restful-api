@@ -18,12 +18,13 @@ import (
 )
 
 var (
-	C             *mongo.Client
-	db            *mongo.Database
-	cfg           config.Properties
-	productsColl  *mongo.Collection
-	usersColl     *mongo.Collection
-	CorrelationId = "X-Correlation-Id"
+	C              *mongo.Client
+	db             *mongo.Database
+	cfg            config.Properties
+	productsColl   *mongo.Collection
+	usersColl      *mongo.Collection
+	XCorrelationId = "X-Correlation-Id"
+	XAuthToken     = "X-Auth-Token"
 )
 
 func init() {
@@ -61,7 +62,7 @@ func addCorrelationId(next echo.HandlerFunc) echo.HandlerFunc {
 		// generate correlation id
 		var newId string
 
-		id := c.Request().Header.Get(CorrelationId)
+		id := c.Request().Header.Get(XCorrelationId)
 		if id == "" {
 			// generate random number
 			newId = random.String(12)
@@ -69,8 +70,8 @@ func addCorrelationId(next echo.HandlerFunc) echo.HandlerFunc {
 			newId = id
 		}
 
-		c.Request().Header.Set(CorrelationId, newId)
-		c.Response().Header().Set(CorrelationId, newId)
+		c.Request().Header.Set(XCorrelationId, newId)
+		c.Response().Header().Set(XCorrelationId, newId)
 		return next(c)
 	}
 }
@@ -85,13 +86,18 @@ func main() {
 		Format: `${time_rfc3339_nano} ${remote_ip} ${header:X-Correlation-Id} ${host} ${method} ${uri} ${user_agent}` +
 			`${status} ${error} ${latency_human}` + "\n",
 	}))
+	jwtConfig := middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:  []byte(cfg.JwtSecret),
+		TokenLookup: "header:" + XAuthToken,
+		AuthScheme:  "Bearer",
+	})
 
 	h := &products.ProductsHandler{Coll: productsColl}
-	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
-	e.GET("/products", h.GetProducts)
-	e.GET("/products/:id", h.GetProduct)
-	e.PUT("/products/:id", h.UpdateProduct, middleware.BodyLimit("1M"))
-	e.DELETE("/products/:id", h.DeleteProduct)
+	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"), jwtConfig)
+	e.GET("/products", h.GetProducts, jwtConfig)
+	e.GET("/products/:id", h.GetProduct, jwtConfig)
+	e.PUT("/products/:id", h.UpdateProduct, middleware.BodyLimit("1M"), jwtConfig)
+	e.DELETE("/products/:id", h.DeleteProduct, jwtConfig)
 
 	uh := &users.UsersHandler{Coll: usersColl}
 	e.POST("/auth/register", uh.RegisterUser)
