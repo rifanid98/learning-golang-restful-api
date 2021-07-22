@@ -2,7 +2,6 @@ package products
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -64,21 +63,32 @@ func findProducts(ctx context.Context, qs url.Values, collection CollectionAPI) 
 	for k, v := range qs {
 		filter[k] = v[0]
 	}
+
+	if filter["_id"] != nil {
+		// convert string value of _id to ObjectID
+		_id, err := primitive.ObjectIDFromHex(filter["_id"].(string))
+		if err != nil {
+			return products, err
+		}
+		filter["_id"] = _id
+	}
+
 	cursor, err := collection.Find(ctx, bson.M(filter))
 	if err != nil {
 		log.Errorf("Unable to find products : %v", err)
+		return products, nil
 	}
 
 	err = cursor.All(ctx, &products)
 	if err != nil {
 		log.Errorf("Unable to read the cursor : %v", err)
+		return products, nil
 	}
 
 	return products, nil
 }
 
 func (h *ProductsHandler) GetProducts(c echo.Context) error {
-	fmt.Println("Hollaa")
 	products, err := findProducts(context.Background(), c.QueryParams(), h.Coll)
 	if err != nil {
 		return err
