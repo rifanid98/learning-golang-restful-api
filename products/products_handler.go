@@ -32,9 +32,19 @@ func createProducts(ctx context.Context, products []Product, coll CollectionAPI)
 }
 
 func (h *ProductsHandler) CreateProducts(c echo.Context) error {
+	c.Echo().Validator = &ProductValidator{validator: v}
+
 	var products []Product
 	if err := c.Bind(&products); err != nil {
 		log.Fatalf("Unable to bind: %v", err)
+		return err
+	}
+
+	for _, product := range products {
+		if err := c.Validate(product); err != nil {
+			log.Printf("Unable to validate the product %+v %v", product, err)
+			return err
+		}
 	}
 
 	ids, err := createProducts(context.Background(), products, h.Coll)

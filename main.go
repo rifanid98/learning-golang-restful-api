@@ -9,6 +9,7 @@ import (
 
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -38,8 +39,12 @@ func init() {
 
 func main() {
 	e := echo.New()
+
+	e.Pre(middleware.RemoveTrailingSlash())
+
 	h := &products.ProductsHandler{Coll: coll}
-	e.POST("/products", h.CreateProducts)
+	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
+
 	e.Logger.Infof("Listening on %s:%s ", cfg.AppHost, cfg.AppPort)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.AppHost, cfg.AppPort)))
 }
