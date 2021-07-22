@@ -17,7 +17,7 @@ type ProductsHandler struct {
 	Coll CollectionAPI
 }
 
-func createProducts(ctx context.Context, products []Product, coll CollectionAPI) ([]interface{}, error) {
+func createProducts(ctx context.Context, products []Product, coll CollectionAPI) ([]interface{}, *echo.HTTPError) {
 	var insertedIds []interface{}
 
 	for _, product := range products {
@@ -26,7 +26,7 @@ func createProducts(ctx context.Context, products []Product, coll CollectionAPI)
 		res, err := coll.InsertOne(ctx, product)
 		if err != nil {
 			log.Errorf("Unable to insert: %v", err)
-			return nil, err
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, "Unable to insert")
 		}
 
 		insertedIds = append(insertedIds, res.InsertedID)
@@ -41,13 +41,13 @@ func (h *ProductsHandler) CreateProducts(c echo.Context) error {
 	var products []Product
 	if err := c.Bind(&products); err != nil {
 		log.Errorf("Unable to bind: %v", err)
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to bind data")
 	}
 
 	for _, product := range products {
 		if err := c.Validate(product); err != nil {
 			log.Errorf("Unable to validate the product %+v %v", product, err)
-			return err
+			return echo.NewHTTPError(http.StatusBadRequest, "Unable to validate the product")
 		}
 	}
 
@@ -59,7 +59,7 @@ func (h *ProductsHandler) CreateProducts(c echo.Context) error {
 	return c.JSON(http.StatusCreated, ids)
 }
 
-func findProducts(ctx context.Context, qs url.Values, collection CollectionAPI) ([]Product, error) {
+func findProducts(ctx context.Context, qs url.Values, collection CollectionAPI) ([]Product, *echo.HTTPError) {
 	var products []Product
 	filter := make(map[string]interface{})
 	for k, v := range qs {
@@ -70,7 +70,8 @@ func findProducts(ctx context.Context, qs url.Values, collection CollectionAPI) 
 		// convert string value of _id to ObjectID
 		_id, err := primitive.ObjectIDFromHex(filter["_id"].(string))
 		if err != nil {
-			return products, err
+			log.Errorf("Unable to convert id to _id: %v", err)
+			return products, echo.NewHTTPError(http.StatusInternalServerError, "Unable to convert id to _id")
 		}
 		filter["_id"] = _id
 	}
@@ -78,13 +79,13 @@ func findProducts(ctx context.Context, qs url.Values, collection CollectionAPI) 
 	cursor, err := collection.Find(ctx, bson.M(filter))
 	if err != nil {
 		log.Errorf("Unable to find products : %v", err)
-		return products, nil
+		return products, echo.NewHTTPError(http.StatusNotFound, "Unable to find products")
 	}
 
 	err = cursor.All(ctx, &products)
 	if err != nil {
 		log.Errorf("Unable to read the cursor : %v", err)
-		return products, nil
+		return products, echo.NewHTTPError(http.StatusInternalServerError, "Unable to read the cursor")
 	}
 
 	return products, nil
@@ -99,20 +100,20 @@ func (h *ProductsHandler) GetProducts(c echo.Context) error {
 	return c.JSON(http.StatusOK, &products)
 }
 
-func findProduct(ctx context.Context, id string, coll CollectionAPI) (*Product, error) {
+func findProduct(ctx context.Context, id string, coll CollectionAPI) (*Product, *echo.HTTPError) {
 	var product Product
 
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		log.Errorf("Unable to convert id to _id: %v", err)
-		return &product, err
+		return &product, echo.NewHTTPError(http.StatusInternalServerError, "Unable to convert id to _id")
 	}
 
 	filter := bson.M{"_id": _id}
 	res := coll.FindOne(ctx, filter)
 	if err := res.Decode(&product); err != nil {
 		log.Errorf("Unable to decode FindOne res: %v", err)
-		return &product, err
+		return &product, echo.NewHTTPError(http.StatusInternalServerError, "Unable to convert id to _id")
 	}
 
 	return &product, nil
@@ -127,40 +128,40 @@ func (h *ProductsHandler) GetProduct(c echo.Context) error {
 	return c.JSON(http.StatusOK, &products)
 }
 
-func updateProduct(ctx context.Context, id string, body io.ReadCloser, coll CollectionAPI) (*Product, error) {
+func updateProduct(ctx context.Context, id string, body io.ReadCloser, coll CollectionAPI) (*Product, *echo.HTTPError) {
 	var product Product
 
 	// 1. find product or return 404
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		log.Errorf("Unable to convert id to _id: %v", err)
-		return &product, err
+		return &product, echo.NewHTTPError(http.StatusInternalServerError, "Unable to convert id to _id")
 	}
 
 	filter := bson.M{"_id": _id}
 	res := coll.FindOne(ctx, filter)
 	if err := res.Decode(&product); err != nil {
 		log.Errorf("Unable to decode FindOne res: %v", err)
-		return &product, err
+		return &product, echo.NewHTTPError(http.StatusInternalServerError, "Unable to decode FindOne res")
 	}
 
 	// 2. decode body to struct or return 500
 	if err := json.NewDecoder(body).Decode(&product); err != nil {
 		log.Errorf("Unable to decode from req body to struct: %v", err)
-		return &product, err
+		return &product, echo.NewHTTPError(http.StatusInternalServerError, "Unable to decode from req body to struct")
 	}
 
 	// 3. validate decoded body or return 400
 	if err := v.Struct(&product); err != nil {
 		log.Errorf("Unable to decode from struct: %v", err)
-		return &product, err
+		return &product, echo.NewHTTPError(http.StatusInternalServerError, "Unable to  decode from struct")
 	}
 
 	// 4. update data or return 500
 	_, err = coll.UpdateOne(ctx, filter, bson.M{"$set": product})
 	if err != nil {
 		log.Errorf("Unable to update: %v", err)
-		return &product, err
+		return &product, echo.NewHTTPError(http.StatusInternalServerError, "Unable to update")
 	}
 
 	return &product, nil
@@ -177,15 +178,17 @@ func (h *ProductsHandler) UpdateProduct(c echo.Context) error {
 	return c.JSON(http.StatusOK, product)
 }
 
-func deleteProduct(ctx context.Context, id string, coll CollectionAPI) (int, error) {
+func deleteProduct(ctx context.Context, id string, coll CollectionAPI) (int, *echo.HTTPError) {
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		log.Errorf("Unable to convert id to _id: %v", err)
+		return 0, echo.NewHTTPError(http.StatusInternalServerError, "Unable to convert id to _id")
 	}
 
 	res, err := coll.DeleteOne(ctx, bson.M{"_id": _id})
 	if err != nil {
 		log.Errorf("Unable to delete data: %v", err)
+		return 0, echo.NewHTTPError(http.StatusInternalServerError, "Unable to delete data")
 	}
 
 	return int(res.DeletedCount), nil

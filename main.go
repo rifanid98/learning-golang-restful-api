@@ -64,6 +64,10 @@ func main() {
 
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Pre(addCorrelationId)
+	e.Pre(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: `${time_rfc3339_nano} ${remote_ip} ${host} ${method} ${uri} ${user_agent}` +
+			`${status} ${error} ${latency_human}` + "\n",
+	}))
 
 	h := &products.ProductsHandler{Coll: coll}
 	e.POST("/products", h.CreateProducts, middleware.BodyLimit("1M"))
