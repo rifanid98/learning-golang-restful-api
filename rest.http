@@ -43,10 +43,19 @@ X-Correlation-Id: yBauqKUWBKLt
 ###
 DELETE http://localhost:8080/products/60f9786367f22c1cee842977
 ###
-POST http://localhost:8080/users
+POST http://localhost:8080/auth/register
 Content-Type: application/json
 
 {
   "username": "adninsijawa.office@gmail.com",
   "password": "password"
 }
+###
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "username": "adninsijawa.office@gmail.com",
+  "password": "password"
+}
+###

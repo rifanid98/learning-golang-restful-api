@@ -94,7 +94,8 @@ func main() {
 	e.DELETE("/products/:id", h.DeleteProduct)
 
 	uh := &users.UsersHandler{Coll: usersColl}
-	e.POST("/users", uh.CreateUser)
+	e.POST("/auth/register", uh.RegisterUser)
+	e.POST("/auth/login", uh.LoginUser)
 	e.Logger.Infof("Listening on %s:%s ", cfg.AppHost, cfg.AppPort)
 	e.Logger.Fatal(e.Start(fmt.Sprintf("%s:%s", cfg.AppHost, cfg.AppPort)))
 }

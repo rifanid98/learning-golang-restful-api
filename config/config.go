@@ -9,4 +9,5 @@ type Properties struct {
 	DBCollection        string `env:"DB_COLLECTION" env-default:"products"`
 	DBProductCollection string `env:"DB_PRODUCTS_COLLECTION" env-default:"products"`
 	DBUsersCollection   string `env:"DB_USERS_COLLECTION" env-default:"users"`
+	JwtSecret           string `env:"JWT_SECRET" env-default:"secretsecretsecret"`
 }
