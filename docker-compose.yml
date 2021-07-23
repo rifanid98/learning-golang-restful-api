@@ -1,0 +1,18 @@
+version: "2.2"
+services:
+  golang_echo-restful-server:
+    container_name: golang_echo-restful-server
+    build: .
+    expose:
+      - "8080"
+    env_file:
+      - ./config/dev.env
+    depends_on:
+      - mongo
+    ports:
+      - "8080:8080"
+  mongo:
+    image: mongo
+    container_name: golang_echo-restful-db
+    ports:
+      - "27017:27017"
