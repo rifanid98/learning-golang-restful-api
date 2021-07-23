@@ -40,7 +40,7 @@ func init() {
 	}
 
 	db = C.Database(cfg.DBName)
-	coll = db.Collection(cfg.DBCollection)
+	coll = db.Collection(cfg.DBProductCollection)
 	h = &ProductsHandler{}
 }
 

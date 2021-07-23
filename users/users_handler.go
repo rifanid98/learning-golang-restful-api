@@ -61,27 +61,28 @@ func (h *UsersHandler) RegisterUser(c echo.Context) error {
 	var user User
 	if err := c.Bind(&user); err != nil {
 		log.Errorf("Unable to bind: %v", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to bind data")
+		return c.JSON(http.StatusInternalServerError, "Unable to bind data")
 	}
 
 	if err := c.Validate(user); err != nil {
 		log.Errorf("Unable to validate the user %+v %v", user, err)
-		return echo.NewHTTPError(http.StatusBadRequest, "Unable to validate the user")
+		return c.JSON(http.StatusBadRequest, "Unable to validate the user")
 	}
 
-	ids, err := createUser(context.Background(), user, h.Coll)
+	_, err := createUser(context.Background(), user, h.Coll)
 	if err != nil {
-		return err
+		return c.JSON(err.Code, err.Message)
 	}
 
 	token, tokenErr := user.createToken()
 	if tokenErr != nil {
 		log.Errorf("Unable to generate the token: %v", tokenErr)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to generate the token")
+		return c.JSON(http.StatusInternalServerError, "Unable to generate the token")
 	}
 
+	user.Password = ""
 	c.Response().Header().Set("x-auth-token", "Bearer "+token)
-	return c.JSON(http.StatusCreated, ids)
+	return c.JSON(http.StatusCreated, user)
 }
 
 func isCredValid(givenPassword, hashedPassword string) bool {
@@ -139,23 +140,23 @@ func (h *UsersHandler) LoginUser(c echo.Context) error {
 	var user User
 	if err := c.Bind(&user); err != nil {
 		log.Errorf("Unable to bind: %v", err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, "Unable to bind data")
+		return c.JSON(http.StatusUnprocessableEntity, "Unable to bind data")
 	}
 
 	if err := c.Validate(user); err != nil {
 		log.Errorf("Unable to validate the user %+v %v", user, err)
-		return echo.NewHTTPError(http.StatusBadRequest, "Unable to validate the payload")
+		return c.JSON(http.StatusBadRequest, "Unable to validate the payload")
 	}
 
 	ids, err := loginUser(context.Background(), &user, h.Coll)
 	if err != nil {
-		return err
+		return c.JSON(err.Code, err.Message)
 	}
 
 	token, tokenErr := user.createToken()
 	if tokenErr != nil {
 		log.Errorf("Unable to generate the token: %v", tokenErr)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to generate the token")
+		return c.JSON(http.StatusInternalServerError, "Unable to generate the token")
 	}
 
 	c.Response().Header().Set("x-auth-token", "Bearer "+token)
