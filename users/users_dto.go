@@ -12,6 +12,7 @@ var (
 type User struct {
 	Email    string `json:"username" bson:"username" validate:"required,email"`
 	Password string `json:"password" bson:"password" validate:"required,min=8,max=300"`
+	IsAdmin  bool   `json:"is_admin,omitempty" bson:"is_admin"`
 }
 
 // UserValidator a product validator

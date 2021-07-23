@@ -74,6 +74,13 @@ func (h *UsersHandler) RegisterUser(c echo.Context) error {
 		return err
 	}
 
+	token, tokenErr := user.createToken()
+	if tokenErr != nil {
+		log.Errorf("Unable to generate the token: %v", tokenErr)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to generate the token")
+	}
+
+	c.Response().Header().Set("x-auth-token", "Bearer "+token)
 	return c.JSON(http.StatusCreated, ids)
 }
 
@@ -85,14 +92,14 @@ func isCredValid(givenPassword, hashedPassword string) bool {
 	return true
 }
 
-func createToken(username string) (string, error) {
+func (u User) createToken() (string, error) {
 	if err := cleanenv.ReadEnv(&cfg); err != nil {
 		log.Fatalf("Configuration cannot be read: %v", err)
 	}
 
 	claims := jwt.MapClaims{}
-	claims["authorized"] = true
-	claims["user_id"] = username
+	claims["authorized"] = u.IsAdmin
+	claims["user_id"] = u.Email
 	claims["exp"] = time.Now().Add(15 * time.Minute).Unix()
 
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -104,10 +111,11 @@ func createToken(username string) (string, error) {
 	return token, nil
 }
 
-func loginUser(ctx context.Context, user User, coll CollectionAPI) (interface{}, *echo.HTTPError) {
-	var storedUser User
+func loginUser(ctx context.Context, user *User, coll CollectionAPI) (interface{}, *echo.HTTPError) {
+	givenPassword := user.Password
+
 	res := coll.FindOne(ctx, bson.M{"username": user.Email})
-	err := res.Decode(&storedUser)
+	err := res.Decode(&user)
 	if err != nil && err != mongo.ErrNoDocuments {
 		log.Errorf("Unable to decode retrieved user: %s", err)
 		return nil, echo.NewHTTPError(http.StatusUnprocessableEntity, "Unable to decode retrieved user")
@@ -118,11 +126,11 @@ func loginUser(ctx context.Context, user User, coll CollectionAPI) (interface{},
 		return nil, echo.NewHTTPError(http.StatusNotFound, "User does not exists")
 	}
 
-	if !isCredValid(user.Password, storedUser.Password) {
+	if !isCredValid(givenPassword, user.Password) {
 		return nil, echo.NewHTTPError(http.StatusUnauthorized, "Invalid Credentials")
 	}
 
-	return User{Email: storedUser.Email}, nil
+	return User{Email: user.Email}, nil
 }
 
 func (h *UsersHandler) LoginUser(c echo.Context) error {
@@ -139,17 +147,17 @@ func (h *UsersHandler) LoginUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Unable to validate the payload")
 	}
 
-	ids, err := loginUser(context.Background(), user, h.Coll)
+	ids, err := loginUser(context.Background(), &user, h.Coll)
 	if err != nil {
 		return err
 	}
 
-	token, tokenErr := createToken(user.Email)
+	token, tokenErr := user.createToken()
 	if tokenErr != nil {
 		log.Errorf("Unable to generate the token: %v", tokenErr)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to generate the token")
 	}
 
-	c.Response().Header().Set("x-auth-token", token)
+	c.Response().Header().Set("x-auth-token", "Bearer "+token)
 	return c.JSON(http.StatusCreated, ids)
 }

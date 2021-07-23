@@ -6,7 +6,10 @@ import (
 	"learning-golang-restful-api/config"
 	"learning-golang-restful-api/products"
 	"learning-golang-restful-api/users"
+	"net/http"
+	"strings"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -76,6 +79,25 @@ func addCorrelationId(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func adminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		hToken := c.Request().Header.Get("x-auth-token") // Bearer
+		jwtToken := strings.Split(hToken, " ")[1]
+		claims := jwt.MapClaims{}
+		_, err := jwt.ParseWithClaims(jwtToken, claims, func(t *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JwtSecret), nil
+		})
+		if err != nil {
+			log.Errorf("Unable to parse token: %v", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Unable to parse token")
+		}
+		if !claims["authorized"].(bool) {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+		}
+		return next(c)
+	}
+}
+
 func main() {
 	e := echo.New()
 	e.Logger.SetLevel(log.ERROR)
@@ -97,7 +119,7 @@ func main() {
 	e.GET("/products", h.GetProducts, jwtConfig)
 	e.GET("/products/:id", h.GetProduct, jwtConfig)
 	e.PUT("/products/:id", h.UpdateProduct, middleware.BodyLimit("1M"), jwtConfig)
-	e.DELETE("/products/:id", h.DeleteProduct, jwtConfig)
+	e.DELETE("/products/:id", h.DeleteProduct, jwtConfig, adminMiddleware)
 
 	uh := &users.UsersHandler{Coll: usersColl}
 	e.POST("/auth/register", uh.RegisterUser)
